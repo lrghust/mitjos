@@ -360,7 +360,18 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create)
 {
 	// Fill this function in
-	return NULL;
+	pde_t *pde = pgdir + PDX(va);
+	if(*pde & PTE_P){//page table present
+		return (pte_t *)(KADDR(PTE_ADDR(*pde)) + PTX(va));
+	}
+	else{ //create new page table
+		if(create == false) return NULL;
+		PageInfo *page_table = page_alloc(ALLOC_ZERO);
+		if(page_table == NULL) return NULL;
+		page_table->pp_ref++;
+		*pde = page2pa(page_table) | PTE_P | PTE_W | PTE_U;
+		return (pte_t *)page2kva(page_table) + (pte_t *)PTX(va);
+	}
 }
 
 //
@@ -378,6 +389,13 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
+	for(size_t i = 0; i != size; i += PGSIZE){
+		va_i = va + i;
+		pa_i = pa + i;
+		pte_t *pte_addr = pgdir_walk(pgdir, (void *)va_i, true);
+		*pte_addr = pa_i | perm | PTE_P;
+	}
+
 }
 
 //
@@ -427,7 +445,11 @@ struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
 	// Fill this function in
-	return NULL;
+	pte_t *pte = pgdir_walk(pgdir, va, false);
+	if(pte == NULL || !(*pte & PTE_P)) return NULL; //no page table or no page
+	PageInfo *page_info = pa2page(PTE_ADDR(*pte));
+	if(pte_store) *pte_store = pte;
+	return page_info;
 }
 
 //
