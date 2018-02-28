@@ -76,7 +76,7 @@ readseg(uint32_t pa, uint32_t count, uint32_t offset)
 	end_pa = pa + count;
 
 	// round down to sector boundary
-	pa &= ~(SECTSIZE - 1);
+	pa &= ~(SECTSIZE - 1);//pa & 0xfe00
 
 	// translate from bytes to sectors, and kernel starts at sector 1
 	offset = (offset / SECTSIZE) + 1;
