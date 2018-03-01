@@ -167,7 +167,7 @@ mem_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
-	envs = (struct Env *)boot_alloc(NENV * sizeof(struct ENV));
+	envs = (struct Env *)boot_alloc(NENV * sizeof(struct Env));
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -722,7 +722,7 @@ check_page_alloc(void)
 static void
 check_kern_pgdir(void)
 {
-	cprintf("here\n");
+	//cprintf("here\n");
 	uint32_t i, n;
 	pde_t *pgdir;
 
@@ -744,13 +744,13 @@ check_kern_pgdir(void)
 	for (i = 0; i < npages * PGSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KERNBASE + i) == i);
 
-	cprintf("phys mem\n");
+	//cprintf("phys mem\n");
 	// check kernel stack
 	for (i = 0; i < KSTKSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) == PADDR(bootstack) + i);
 	assert(check_va2pa(pgdir, KSTACKTOP - PTSIZE) == ~0);
 
-	cprintf("kernel stack\n");
+	//cprintf("kernel stack\n");
 	// check PDE permissions
 	for (i = 0; i < NPDENTRIES; i++) {
 		switch (i) {
