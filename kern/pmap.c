@@ -186,6 +186,8 @@ mem_init(void)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
 
+	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U);
+
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -198,6 +200,8 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
 
+	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_W);
+
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
 	// Ie.  the VA range [KERNBASE, 2^32) should map to
@@ -206,6 +210,8 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
+
+	boot_map_region(kern_pgdir, KERNBASE, 0x100000000 - KERNBASE, 0, PTE_W);
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -656,6 +662,7 @@ check_page_alloc(void)
 static void
 check_kern_pgdir(void)
 {
+	cprintf("here\n");
 	uint32_t i, n;
 	pde_t *pgdir;
 
@@ -663,19 +670,23 @@ check_kern_pgdir(void)
 
 	// check pages array
 	n = ROUNDUP(npages*sizeof(struct PageInfo), PGSIZE);
-	for (i = 0; i < n; i += PGSIZE)
+	for (i = 0; i < n; i += PGSIZE){
+		//cprintf("pages1: %x, pages2: %x\n", check_va2pa(pgdir, UPAGES + i), PADDR(pages) + i);
 		assert(check_va2pa(pgdir, UPAGES + i) == PADDR(pages) + i);
+	}
 
-
+	cprintf("pages\n");
 	// check phys mem
 	for (i = 0; i < npages * PGSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KERNBASE + i) == i);
 
+	cprintf("phys mem\n");
 	// check kernel stack
 	for (i = 0; i < KSTKSIZE; i += PGSIZE)
 		assert(check_va2pa(pgdir, KSTACKTOP - KSTKSIZE + i) == PADDR(bootstack) + i);
 	assert(check_va2pa(pgdir, KSTACKTOP - PTSIZE) == ~0);
 
+	cprintf("kernel stack\n");
 	// check PDE permissions
 	for (i = 0; i < NPDENTRIES; i++) {
 		switch (i) {
