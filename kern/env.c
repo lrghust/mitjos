@@ -117,7 +117,8 @@ env_init(void)
 	// Set up envs array
 	// LAB 3: Your code here.
 	env_free_list = envs;
-	for(int i = 0; i < NENV - 1; i++){
+	int i;
+	for(i = 0; i < NENV - 1; i++){
 		envs[i].env_link = envs + i + 1;
 		envs[i].env_id = 0;
 		envs[i].env_status = ENV_FREE;
@@ -278,8 +279,8 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
-	uint32_t up_bound = ROUNDUP((char *)va + len, PGSIZE);
-	uint32_t low_bound = ROUNDDOWN(va, PGSIZE);
+	uint32_t up_bound = (uint32_t)ROUNDUP((char *)va + len, PGSIZE);
+	uint32_t low_bound = (uint32_t)ROUNDDOWN(va, PGSIZE);
 	for(uint32_t i = low_bound; i != up_bound; i += PGSIZE){
 		struct PageInfo *page_info = page_alloc(0);
 		if(page_info == NULL) panic("region_alloc: alloc page fail.\n");
@@ -353,8 +354,8 @@ load_icode(struct Env *e, uint8_t *binary)
 	eph = ph + elf_head->e_phnum;
 	for(; ph < eph; ph++){
 		if(ph->p_type != ELF_PROG_LOAD) continue;
-		region_alloc(e, ph->p_va, ph->p_memsz);
-		memcpy(ph->p_va, binary + ph->p_offset, ph->p_filesz);
+		region_alloc(e, (void *)ph->p_va, ph->p_memsz);
+		memcpy((void *)ph->p_va, binary + ph->p_offset, ph->p_filesz);
 		memset((char *)ph->p_va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
 	}
 
@@ -362,7 +363,7 @@ load_icode(struct Env *e, uint8_t *binary)
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
-	region_alloc(e, USTACKTOP - PGSIZE, PGSIZE);
+	region_alloc(e, (void *)(USTACKTOP - PGSIZE), PGSIZE);
 
 	e->env_tf.tf_eip = elf_head->e_entry;
 }
