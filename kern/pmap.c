@@ -547,8 +547,8 @@ int
 user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
-	if((char *)va + len >= ULIM){
-		user_mem_check_addr = ULIM;
+	if((uint32_t)((char *)va + len) >= ULIM){
+		user_mem_check_addr = (uintptr_t)va;
 		return -E_FAULT;
 	}
 	uint32_t low_bound = (uint32_t)ROUNDDOWN(va, PGSIZE);
@@ -556,7 +556,9 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	for(uint32_t i = low_bound; i!= high_bound; i += PGSIZE ){
 		pte_t *pte = pgdir_walk(env->env_pgdir, (void *)i, false);
 		if(!(*pte & (perm | PTE_P))){
-			user_mem_check_addr = i;
+			if(i < (uint32_t)va)
+				user_mem_check_addr = (uintptr_t)va;
+			else user_mem_check_addr = i;
 			return -E_FAULT;
 		}
 	}
@@ -573,6 +575,8 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 void
 user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 {
+	//int tmp = user_mem_check(env, va, len, perm | PTE_U);
+	//cprintf("tmp: %d va: %x len: %d\n", tmp, va, len);
 	if (user_mem_check(env, va, len, perm | PTE_U) < 0) {
 		cprintf("[%08x] user_mem_check assertion failure for "
 			"va %08x\n", env->env_id, user_mem_check_addr);
