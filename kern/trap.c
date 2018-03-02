@@ -187,6 +187,7 @@ trap_dispatch(struct Trapframe *tf)
 	// LAB 3: Your code here.
 	switch(tf->tf_trapno){
 		case T_PGFLT:{
+
 			page_fault_handler(tf);
 			break;
 		}
@@ -269,6 +270,8 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if(tf->tf_cs & 0xff == GD_KT)
+		panic("kernel page fault.\n");
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.
