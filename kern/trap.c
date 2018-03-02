@@ -77,6 +77,8 @@ void aligment_check_handler();
 void machine_check_handler();
 void simd_floating_point_error_handler();
 
+void system_call_handler();
+
 void
 trap_init(void)
 {
@@ -101,6 +103,8 @@ trap_init(void)
 	SETGATE(idt[T_ALIGN], 1, GD_KT, aligment_check_handler, 0);
 	SETGATE(idt[T_MCHK], 1, GD_KT, machine_check_handler, 0);
 	SETGATE(idt[T_SIMDERR], 1, GD_KT, simd_floating_point_error_handler, 0);
+
+	SETGATE(idt[T_SYSCALL], 1, GD_KT, system_call_handler, 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -187,6 +191,16 @@ trap_dispatch(struct Trapframe *tf)
 			break;
 		case T_BRKPT:
 			monitor(tf);
+			break;
+		case T_SYSCALL:
+			uint32_t syscallno = tf->tf_regs.reg_eax;
+			uint32_t a1 = tf->tf_regs.reg_edx;
+			uint32_t a2 = tf->tf_regs.reg_ecx;
+			uint32_t a3 = tf->tf_regs.reg_ebx;
+			uint32_t a4 = tf->tf_regs.reg_edi;
+			uint32_t a5 = tf->tf_regs.reg_esi;
+			int32_t retval = syscall(syscallno, a1, a2, a3, a4, a5);
+			tf->tf_regs.reg_eax = retval;
 			break;
 		default:
 			break;
