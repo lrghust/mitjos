@@ -280,6 +280,9 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
+	for(uint32_t i = 0; i < NCPU; i++){
+		boot_map_region(kern_pgdir, KSTACKTOP - i * (KSTKSIZE + KSTKGAP) - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W);
+	}
 
 }
 
@@ -322,6 +325,7 @@ page_init(void)
 	size_t i;
 	// skip 0 page
 	for (i = 1; i < npages_basemem; i++) {
+		if(i == MPENTRY_PADDR / PGSIZE) continue;
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -588,7 +592,13 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	//panic("mmio_map_region not implemented");
+	size_t new_size = ROUNDUP(size, PGSIZE);
+	if(base + new_size > MMIOLIM)
+		panic("reservation would overflow MMIOLIM.\n");
+	boot_map_region(kern_pgdir, base, new_size, pa, PTE_PCD | PTE_PWT | PTE_W);
+	base += new_size;
+	return (void *)(base - new_size);
 }
 
 static uintptr_t user_mem_check_addr;
@@ -877,6 +887,7 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 	pte_t *p;
 
 	pgdir = &pgdir[PDX(va)];
+	//cprintf("check: pde: %x *pde: %x\n", pgdir, *pgdir);
 	if (!(*pgdir & PTE_P))
 		return ~0;
 	//cprintf("here.\n");
@@ -1051,6 +1062,8 @@ check_page(void)
 	// check that they don't overlap
 	assert(mm1 + 8096 <= mm2);
 	// check page mappings
+	//cprintf("mm1:%x mm2:%x\n", mm1, mm2);
+	//cprintf("p_mm1:%x p_mm2:%x\n", check_va2pa(kern_pgdir, mm1), check_va2pa(kern_pgdir, mm2));
 	assert(check_va2pa(kern_pgdir, mm1) == 0);
 	assert(check_va2pa(kern_pgdir, mm1+PGSIZE) == PGSIZE);
 	assert(check_va2pa(kern_pgdir, mm2) == 0);
