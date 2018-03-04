@@ -29,19 +29,16 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
+	//cprintf("env num:%d\n", NENV);
 	size_t start_id = 0;
-	int curcpu = -1;
-	if(curenv){
-		start_id = (ENVX(curenv->env_id) + 1) % NENV;
-		curcpu = curenv -> env_cpunum;
-	}
-	size_t query_id = start_id;
+	if(thiscpu->cpu_env)
+		start_id = (ENVX(thiscpu->cpu_env->env_id) + 1) % NENV;
+	int query_id = start_id;
 	while(1){
 		if(envs[query_id].env_status == ENV_RUNNABLE ||
-		    (curenv && 
-		    query_id == ENVX(curenv->env_id) && 
-		  	curenv->env_status == ENV_RUNNING) &&
-		  	curenv->env_cpunum == curcpu)
+		    (thiscpu->cpu_env && 
+		    query_id == ENVX(thiscpu->cpu_env->env_id) && 
+		  	thiscpu->cpu_env->env_status == ENV_RUNNING))
 			break;
 		query_id = (query_id + 1) % NENV;
 		if(query_id == start_id){
@@ -50,11 +47,14 @@ sched_yield(void)
 		}
 	}
 	if(query_id >= 0){
+		//cprintf("query id:%d\n", query_id);
 		env_run(envs + query_id);
 	}
-
-	// sched_halt never returns
-	sched_halt();
+	else{
+		//cprintf("here.\n");
+		// sched_halt never returns
+		sched_halt();
+	}
 }
 
 // Halt this CPU when there is nothing to do. Wait until the
