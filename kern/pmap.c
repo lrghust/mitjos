@@ -631,9 +631,12 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 	}
 	uint32_t low_bound = (uint32_t)ROUNDDOWN(va, PGSIZE);
 	uint32_t high_bound = (uint32_t)ROUNDUP((char *)va + len, PGSIZE);
+	//cprintf("low:%x high:%x\n", low_bound, high_bound);
 	for(uint32_t i = low_bound; i!= high_bound; i += PGSIZE ){
 		pte_t *pte = pgdir_walk(env->env_pgdir, (void *)i, false);
-		if(!(*pte & (perm | PTE_P))){
+		//cprintf("here2 pte:%x\n", pte);
+		if(pte == NULL || !(*pte & (perm | PTE_P))){
+			//cprintf("here3\n");
 			if(i < (uint32_t)va)
 				user_mem_check_addr = (uintptr_t)va;
 			else user_mem_check_addr = i;
