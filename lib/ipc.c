@@ -25,7 +25,7 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 	// LAB 4: Your code here.
 	//panic("ipc_recv not implemented");
 	void *va = pg;
-	if(pg == NULL) va = UTOP;
+	if(pg == NULL) va = (void *)UTOP;
 	int retval = sys_ipc_recv(va);
 	if(retval < 0) {
 		if(from_env_store) *from_env_store = 0;
@@ -51,13 +51,14 @@ ipc_send(envid_t to_env, uint32_t val, void *pg, int perm)
 	// LAB 4: Your code here.
 	//panic("ipc_send not implemented");
 	void *va = pg;
-	if(pg == NULL) va = UTOP;
+	if(pg == NULL) va = (void *)UTOP;
 	int retval = 0;
 	while(1){
 		retval = sys_ipc_try_send(to_env, val, va, perm);
 		if(retval == 0) break;
 		if(retval != -E_IPC_NOT_RECV)
 			panic("ipc_send: %e\n", retval);
+		sys_yield();
 	} 
 }
 

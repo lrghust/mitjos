@@ -309,24 +309,27 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 	if(retval < 0) return retval;
 	if(!dstenv->env_ipc_recving) return -E_IPC_NOT_RECV;
 	//int pageflag = 0;
-	if(srcva < UTOP && dstenv->env_ipc_dstva < UTOP){
-		/*
-		pte_t *srcpte = NULL;
+	if(srcva < (void *)UTOP && dstenv->env_ipc_dstva < (void *)UTOP){
+		struct PageInfo *page = NULL;
+		pte_t *pte = NULL;
 		if((ROUNDDOWN(srcva, PGSIZE) != srcva) ||
 		   (!((perm & (PTE_U | PTE_P)) && !(perm & ~PTE_SYSCALL))) ||
-		   ((srcpte = pgdir_walk(curenv->env_pgdir, srcva, false)) == NULL) ||
-		   ((perm & PTE_W) && !(*srcpte & PTE_W)))
+		   ((page = page_lookup(curenv->env_pgdir, srcva, &pte)) == NULL) ||
+		   ((perm & PTE_W) && !(*pte & PTE_W)))
 			return -E_INVAL; 
-		*/
-		retval = sys_page_map(curenv, srcva, dstenv, dstenv->env_ipc_dstva, perm);
+		//retval = sys_page_map(curenv->env_id, srcva, envid, dstenv->env_ipc_dstva, perm);
+		//if(retval < 0) return retval;
+		retval = page_insert(dstenv->env_pgdir, page, dstenv->env_ipc_dstva, perm);
 		if(retval < 0) return retval;
+
 		dstenv->env_ipc_perm = perm;
 	}
 	else dstenv->env_ipc_perm = 0;
 	dstenv->env_ipc_recving = false;
 	dstenv->env_ipc_from = curenv->env_id;
 	dstenv->env_ipc_value = value;
-	sys_env_set_status(envid, ENV_RUNNABLE);
+	dstenv->env_status = ENV_RUNNABLE;
+	dstenv->env_tf.tf_regs.reg_eax = 0;
 	return 0;
 }
 
@@ -346,7 +349,7 @@ sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
 	//panic("sys_ipc_recv not implemented");
-	if(dstva < UTOP && ROUNDDOWN(dstva, PGSIZE) != dstva)
+	if(dstva < (void *)UTOP && ROUNDDOWN(dstva, PGSIZE) != dstva)
 		return -E_INVAL;
 	curenv->env_ipc_recving = true;
 	curenv->env_ipc_dstva = dstva;
@@ -394,6 +397,10 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_yield:
 			sys_yield();
 			break;
+		case SYS_ipc_try_send:
+			return sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void *)a3, (unsigned)a4);
+		case SYS_ipc_recv:
+			return sys_ipc_recv((void *)a1);
 		case NSYSCALLS:
 			break;
 		default:
