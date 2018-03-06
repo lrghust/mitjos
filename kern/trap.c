@@ -86,6 +86,13 @@ void simd_floating_point_error_handler();
 
 void system_call_handler();
 
+void timer_handler();
+void kbd_handler();
+void serial_handler();
+void spurious_handler();
+void ide_handler();
+void error_handler();
+
 void
 trap_init(void)
 {
@@ -112,6 +119,13 @@ trap_init(void)
 	SETGATE(idt[T_SIMDERR], 1, GD_KT, simd_floating_point_error_handler, 0);
 
 	SETGATE(idt[T_SYSCALL], 1, GD_KT, system_call_handler, 3);
+
+	SETGATE(idt[IRQ_OFFSET + IRQ_TIMER], 0, GD_KT, timer_handler, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_KBD], 0, GD_KT, kbd_handler, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_SERIAL], 0, GD_KT, serial_handler, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_SPURIOUS], 0, GD_KT, spurious_handler, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_IDE], 0, GD_KT, ide_handler, 0);
+	SETGATE(idt[IRQ_OFFSET + IRQ_ERROR], 0, GD_KT, error_handler, 0);
 
 	// Per-CPU setup 
 	trap_init_percpu();
