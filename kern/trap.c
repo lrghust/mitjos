@@ -376,13 +376,13 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 4: Your code here.
 	if(curenv->env_pgfault_upcall){
-		cprintf("here1\n");
+		//cprintf("here1\n");
 		uintptr_t start_addr;
 		if(tf->tf_esp < UXSTACKTOP && tf->tf_esp >= UXSTACKTOP - PGSIZE)
 			start_addr = tf->tf_esp - 4 - sizeof(struct UTrapframe);
 		else start_addr = UXSTACKTOP - sizeof(struct UTrapframe);
 		if(1/*start_addr >= UXSTACKTOP - PGSIZE*/){
-			cprintf("here2\n");
+			//cprintf("here2\n");
 			user_mem_assert(curenv, (void *)start_addr, sizeof(struct UTrapframe), PTE_W);
 			struct UTrapframe *utf = (struct UTrapframe *)start_addr;
 			utf->utf_fault_va = fault_va;
